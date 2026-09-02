@@ -1,0 +1,95 @@
+name: Pipeline DevSecOps (CI/CD + Segurança)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ----------------------------------------------------
+  # ETAPA 1: CI (Qualidade de Código e Testes)
+  # ----------------------------------------------------
+  ci_quality:
+    name: 1. CI - Qualidade e Testes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v3
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Executar Linter (Análise Estática de Estilo)
+        run: npm run lint
+
+      - name: Executar Testes Automatizados (Jest)
+        run: npm test
+
+  # ----------------------------------------------------
+  # ETAPA 2: DevSecOps (Camada Adicional de Segurança)
+  # ----------------------------------------------------
+  devsecops_security:
+    name: 2. DevSecOps - Análise de Segurança
+    needs: ci_quality  # Só executa se a etapa de CI passar
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      # 2.1 Análise de Dependências Vulneráveis (Software Composition Analysis - SCA)
+      - name: Verificação de Dependências Vulneráveis (SCA)
+        run: npm audit --audit-level=high
+
+      # 2.2 Detecção de Chaves de API e Segredos Expostos (Secret Scanning)
+      - name: Secret Scanning (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ----------------------------------------------------
+  # ETAPA 3: CD (Entrega e Implantação Contínua)
+  # ----------------------------------------------------
+  cd_deploy:
+    name: 3. CD - Build e Implantação
+    needs: devsecops_security  # Só faz o deploy se passar nas verificações de segurança!
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v3
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar Artefato de Build
+        run: npm run build --if-present
+
+      - name: Simulação de Deploy em Produção
+        run: |
+          echo "================================================="
+          echo "🚀 DEPLOY REALIZADO COM SUCESSO!"
+          echo "Aplicação aprovada em Qualidade, Testes e Segurança."
+          echo "================================================="
