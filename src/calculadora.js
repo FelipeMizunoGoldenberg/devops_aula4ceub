@@ -10,3 +10,6 @@ module.exports = {
   somar,
   subtrair
 };
+
+// SIMULAÇÃO DE VAZAMENTO DE SEGREDO
+const AWS_SECRET_KEY = "[SECRET-REMOVIDO]";
